@@ -1,0 +1,44 @@
+{
+  "name": "internetheroku",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:open:mobile": "cypress open --config viewportWidth=375,viewportHeight=667",
+    "cypress:run:chrome": "cypress run --browser chrome",
+    "cypress:run:chrome:headed": "cypress run --headed --browser chrome",
+    "cy:parallel": "node_modules/.bin/cypress-parallel -s cypress:run -t 5 -d 'cypress/e2e/**/*.cy.js'",
+    "clean:reports": "rm -rf mochawesome-report/ Screenshots/",
+    "merge:reports": "npx mochawesome-merge --reportDir mochawesome-report > Screenshots/cypress-tests-report.json",
+    "create:html:report": "npx mochawesome-report-generator --reportDir Screenshots Screenshots/cypress-tests-report.json",
+    "generate:html:report": "npm run merge:reports && npm run create:html:report",
+    "cy:run:parallel": "node cypress/scripts/runner executors=2",
+    "move-local": "cp -r Screenshots/**/*.png Screenshots",
+    "format": "prettier --write \"**/*.+(js|json|yml|md)\"",
+    "move": "cp -r Screenshots/**/*.png Screenshots",
+    "merge-reports": "mochawesome-merge > public/index.json",
+    "generate-report": "mochawesome-report-generator --reportDir public public/index.json",
+    "slack-report": "cypress-slack-reporter --ci-provider none --report-dir public",
+    "slack": "node slack.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "cypress": "^10.0.2",
+    "cypress-mochawesome-reporter": "^3.2.1",
+    "cypress-multi-reporters": "^1.6.1",
+    "cypress-parallel": "^0.9.1",
+    "cypress-slack-reporter": "v0.7.1",
+    "eslint-plugin-cypress": "^2.12.1",
+    "mochawesome": "^6.1.1",
+    "mochawesome-merge": "^4.1.0",
+    "mochawesome-report-generator": "^5.1.0",
+    "prettier": "^2.7.1"
+  },
+  "dependencies": {
+    "@slack/web-api": "^6.7.2"
+  }
+}

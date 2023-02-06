@@ -1,0 +1,11 @@
+/node_modules/
+/cypress/fixtures
+/cypress/downloads
+/cypress/screenshots
+/cypress/videos
+/cypress/reports
+/mochawesome-report
+/runner-results
+/multi-reporter-config.json
+/Screenshots
+.DS_Store
