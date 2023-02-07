@@ -17,6 +17,8 @@ jobs:
   execution:
     name: Execution ⏳
     needs: setup
+    env:
+      total_runners: 6
     strategy:
       fail-fast: false
       matrix:
@@ -27,7 +29,7 @@ jobs:
         uses: actions/checkout@v3
       - name: Splitting up spec files & storing in GITHUB_ENV
         run: |
-          echo "specs=$(node cypress-split.js 6 ${{ matrix.containers }})" >> $GITHUB_ENV
+          echo "specs=$(node cypress-split.js $total_runners ${{ matrix.containers }})" >> $GITHUB_ENV
       - name: Cypress run 
         uses: cypress-io/github-action@v3
         id: test
