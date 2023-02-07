@@ -17,6 +17,7 @@ jobs:
   execution:
     name: Execution ⏳
     needs: setup
+    timeout-minutes: 60
     env:
       total_runners: 6
     strategy:
