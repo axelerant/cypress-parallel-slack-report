@@ -1,0 +1,300 @@
+# reusable workflow to install NPM dependencies
+# and run Cypress tests across N machines in using cypress-split
+# https://github.com/bahmutov/cypress-split
+name: split
+on:
+  workflow_call:
+    inputs:
+      n:
+        description: 'Number of parallel containers'
+        type: number
+        required: true
+        default: 1
+      # standard parameters
+      config:
+        description: 'Set configuration values. Separate multiple values with a comma. The values set here override any values set in your configuration file.'
+        type: string
+        required: false
+      config-file:
+        description: 'Path to a JSON file where configuration values are set.'
+        type: string
+        required: false
+      env:
+        description: 'Sets Cypress environment variables'
+        type: string
+        required: false
+      browser:
+        description: 'Name of the browser to use'
+        type: string
+        required: false
+      command:
+        description: 'Command that overrides cypress run'
+        type: string
+        required: false
+      start:
+        description: 'Command for starting local server in the background'
+        type: string
+        required: false
+      start-windows:
+        description: 'A different start command on Windows'
+        type: string
+        required: false
+      build:
+        description: 'Command to run in build step before starting tests'
+        type: string
+        required: false
+      install:
+        description: 'Whether or not to run install'
+        type: boolean
+        required: false
+        default: true
+      install-command:
+        description: 'Custom install command to use'
+        type: string
+        required: false
+      runTests:
+        description: 'Whether or not to run tests'
+        type: boolean
+        required: false
+        default: true
+      wait-on:
+        description: 'Local server URL to wait for'
+        type: string
+        required: false
+      wait-on-timeout:
+        description: 'Amount of time to wait for wait-on url to be available'
+        type: number
+        required: false
+        # default is 60 seconds
+        default: 60
+      working-directory:
+        description: 'Working directory containing Cypress folder'
+        type: string
+        required: false
+      headed:
+        description: 'Whether or not to use headed mode'
+        type: boolean
+        required: false
+      spec:
+        description: 'Provide a specific specs to run'
+        type: string
+        required: false
+      project:
+        description: 'Path of project to run'
+        type: string
+        required: false
+      command-prefix:
+        description: 'You can prefix the default test command using the command-prefix option.'
+        type: string
+        required: false
+      cache-key:
+        description: 'Custom cache key'
+        type: string
+        required: false
+      quiet:
+        description: 'Whether or not to silence any Cypress specific output from stdout'
+        type: boolean
+        required: false
+        default: false
+      debug-inputs:
+        description: 'Print the workflow inputs'
+        type: boolean
+        required: false
+        default: false
+      debug:
+        description: 'Set the environment variable DEBUG'
+        type: string
+        required: false
+        default: ''
+      store-artifacts:
+        description: 'Store screenshots and videos from the cypress folder'
+        type: boolean
+        required: false
+        default: true
+      marge:
+        description: |
+          Download the Mochawesome results from all tests jobs
+          and merge into a single report
+        type: boolean
+        required: false
+        default: false
+      slack:
+        description: 'Test runs status & upload failed test screenshots to the channel'
+        type: boolean
+        required: false
+        default: false
+    
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: true
+      SLACK_TOKEN:
+        required: true
+      SLACK_CHANNEL_ID:
+        required: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-20.04
+    # explicitly set the output of this job
+    # so that other jobs can use it
+    outputs:
+      matrix: ${{ steps.prepare.outputs.matrix }}
+    steps:
+      # generate the list using a bash script
+      - name: Create container matrix ⊹
+        id: prepare
+        # for reusable workflow, must use the full action reference
+        uses: bahmutov/gh-build-matrix@main
+        with:
+          n: ${{ inputs.n }} # number of containers to output
+
+      - name: Print result 🖨
+        run: echo '${{ steps.prepare.outputs.matrix }}'
+
+  # the N parallel testing jobs we create
+  tests:
+    needs: prepare
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Debug inputs 🐞
+        if: ${{ inputs.debug-inputs }}
+        env:
+          WORKFLOW_INPUTS: ${{ toJson(inputs) }}
+        run: echo "$WORKFLOW_INPUTS"
+
+      - name: Checkout 🛎
+        uses: actions/checkout@v3
+
+      # these containers will load balance all found tests among themselves
+      - name: Cypress tests 🧪
+        uses: cypress-io/github-action@v5
+        # pass the machine index and the total number
+        # https://github.com/bahmutov/cypress-split
+        env:
+          SPLIT: ${{ strategy.job-total }}
+          SPLIT_INDEX: ${{ strategy.job-index }}
+          # pass the DEBUG environment variable
+          DEBUG: ${{ inputs.debug }}
+        # pass the rest of the commands via Cypress GH Action
+        with:
+          config: ${{ inputs.config }}
+          config-file: ${{ inputs.config-file }}
+          # Cypress.env values
+          env: '${{ inputs.env }}'
+          browser: ${{ inputs.browser }}
+          command: ${{ inputs.command }}
+          start: ${{ inputs.start }}
+          start-windows: ${{ inputs.start-windows }}
+          install: ${{ inputs.install }}
+          install-command: ${{ inputs.install-command }}
+          runTests: ${{ inputs.runTests }}
+          wait-on: ${{ inputs.wait-on }}
+          wait-on-timeout: ${{ inputs.wait-on-timeout }}
+          working-directory: ${{ inputs.working-directory }}
+          headed: ${{ inputs.headed }}
+          spec: ${{ inputs.spec }}
+          project: ${{ inputs.project }}
+          command-prefix: ${{ inputs.command-prefix }}
+          cache-key: ${{ inputs.cache-key }}
+          quiet: ${{ inputs.quiet }}
+
+      # capture screenshots, videos, Mochawesome reports
+      # in a single test artifact so that relative paths work
+      # capture screenshots, videos, Mochawesome reports
+      # https://github.com/actions/upload-artifact
+
+      - uses: actions/upload-artifact@v3
+        if: ${{ inputs.store-artifacts && always() }}
+        with:
+          name: cypress-split-results-${{ strategy.job-index }}
+          path: |
+            cypress/screenshots
+            cypress/videos
+            cypress/results
+          if-no-files-found: ignore
+
+  report:
+    if: ${{ inputs.store-artifacts && inputs.marge && inputs.slack && always() }}
+    needs: tests
+    runs-on: ubuntu-20.04
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - name: Checkout 🛎
+        uses: actions/checkout@v3
+      - name: Install dependencies 🧪
+        uses: cypress-io/github-action@v5
+        with:
+          runTests: false
+      # https://github.com/actions/download-artifact
+      - uses: actions/download-artifact@v3
+        # download all test results artifacts from the previous jobs
+        # it would be nice to download only the split jobs test artifacts
+        # but cannot specify the pattern of the test artifacts yet
+        # https://github.com/actions/download-artifact/issues/103
+        with:
+          path: split-results
+      - name: Display structure of downloaded files
+        run: ls -R split-results
+
+      # copy all reports and videos and screenshots into a single place
+      # mochawesome/
+      #   screenshots/
+      #   videos/
+      #   results/
+      #      all individual JSON reports
+      - name: Prepare folder
+        run: |
+          mkdir mochawesome
+          mkdir -p mochawesome/screenshots
+          mkdir -p mochawesome/videos
+          mkdir -p mochawesome/results
+      - name: Copy all assets and JSON reports
+        run: |
+          cp -r split-results/cypress-split-results-*/screenshots/* mochawesome/screenshots || true
+          cp -r split-results/cypress-split-results-*/videos/* mochawesome/videos || true
+          cp -r split-results/cypress-split-results-*/results/* mochawesome/results || true
+      - name: Show coped files
+        run: ls -lR mochawesome
+      - name: Merge Mochawesome JSON reports
+        # assuming the merge tool is installed
+        run: npx mochawesome-merge mochawesome/results/*.json -o mochawesome/results/merged.json
+      - name: Generate Mochawesome HTML report
+        # assuming the merge tool is installed
+        run: |
+          npx marge mochawesome/results/merged.json \
+            --charts true --showHooks always \
+            --reportDir mochawesome/results \
+            --reportFilename index.html
+
+      # Slack notifications - test runs status & upload failed test screenshots to the channel
+      - name: Set slack environment variables
+        env:
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }} 
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          echo "SLACK_TOKEN=${SLACK_TOKEN}" >> .env
+          echo "SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID}" >> .env
+      - name: Slack notification
+        run: |
+          npx test-results-reporter publish -c report.json
+      - name: Check failed tests screenshots exists
+        id: failed_screenshots
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "mochawesome/screenshots/**/*.png"
+      - name: Upload failed tests screenshots to slack channel
+        if: steps.failed_screenshots.outputs.files_exists == 'true'
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"*_See the failed test screenshots ❌_*"}' $SLACK_WEBHOOK_URL
+          mkdir failed_screenshots
+          cp -r mochawesome/screenshots/**/*.png failed_screenshots
+          npx node slack.js
+      - uses: actions/upload-artifact@v3
+        with:
+          name: merged-mochawesome-report
+          path: mochawesome
+

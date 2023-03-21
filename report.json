@@ -1,0 +1,48 @@
+{
+  "reports": [
+    {
+      "targets": [
+        {
+          "name": "slack",
+          "inputs": {
+            "url": "SLACK_WEBHOOK_URL",
+            "title": "Testing the internet-heroku website"
+          },
+          "extensions": [
+            {
+              "name": "mentions",
+              "inputs": {
+                "users": [
+                  {
+                    "name": "Kosalai",
+                    "slack_uid": "your_slack_uid"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "quick-chart-test-summary"
+            },
+            {
+              "name": "metadata",
+              "inputs": {
+                "data": [
+                  {
+                    "key": "Browser",
+                    "value": "chrome"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "results": [
+        {
+          "type": "mocha",
+          "files": ["mochawesome/results/merged.json"]
+        }
+      ]
+    }
+  ]
+}
