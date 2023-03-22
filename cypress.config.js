@@ -3,10 +3,6 @@ const fs = require("fs");
 const cypressSplit = require("cypress-split");
 
 module.exports = defineConfig({
-  env: {
-    slack_token: 'xoxb-2181353489-3901471769702-dFHgPqsxkfatkd8uEP9ZZGLn',
-    slack_channelId: 'C03NKBG3QTF',
-  },
   watchForFileChanges: false,
   reporter: 'mochawesome',
   reporterOptions: {
