@@ -131,6 +131,8 @@ on:
         required: true
       SLACK_CHANNEL_ID:
         required: true
+      SLACK_UID:
+        required: true
 
 jobs:
   prepare:
