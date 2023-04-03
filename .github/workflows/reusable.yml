@@ -6,108 +6,108 @@ on:
   workflow_call:
     inputs:
       n:
-        description: 'Number of parallel containers'
+        description: "Number of parallel containers"
         type: number
         required: true
         default: 1
       # standard parameters
       config:
-        description: 'Set configuration values. Separate multiple values with a comma. The values set here override any values set in your configuration file.'
+        description: "Set configuration values. Separate multiple values with a comma. The values set here override any values set in your configuration file."
         type: string
         required: false
       config-file:
-        description: 'Path to a JSON file where configuration values are set.'
+        description: "Path to a JSON file where configuration values are set."
         type: string
         required: false
       env:
-        description: 'Sets Cypress environment variables'
+        description: "Sets Cypress environment variables"
         type: string
         required: false
       browser:
-        description: 'Name of the browser to use'
+        description: "Name of the browser to use"
         type: string
         required: false
       command:
-        description: 'Command that overrides cypress run'
+        description: "Command that overrides cypress run"
         type: string
         required: false
       start:
-        description: 'Command for starting local server in the background'
+        description: "Command for starting local server in the background"
         type: string
         required: false
       start-windows:
-        description: 'A different start command on Windows'
+        description: "A different start command on Windows"
         type: string
         required: false
       build:
-        description: 'Command to run in build step before starting tests'
+        description: "Command to run in build step before starting tests"
         type: string
         required: false
       install:
-        description: 'Whether or not to run install'
+        description: "Whether or not to run install"
         type: boolean
         required: false
         default: true
       install-command:
-        description: 'Custom install command to use'
+        description: "Custom install command to use"
         type: string
         required: false
       runTests:
-        description: 'Whether or not to run tests'
+        description: "Whether or not to run tests"
         type: boolean
         required: false
         default: true
       wait-on:
-        description: 'Local server URL to wait for'
+        description: "Local server URL to wait for"
         type: string
         required: false
       wait-on-timeout:
-        description: 'Amount of time to wait for wait-on url to be available'
+        description: "Amount of time to wait for wait-on url to be available"
         type: number
         required: false
         # default is 60 seconds
         default: 60
       working-directory:
-        description: 'Working directory containing Cypress folder'
+        description: "Working directory containing Cypress folder"
         type: string
         required: false
       headed:
-        description: 'Whether or not to use headed mode'
+        description: "Whether or not to use headed mode"
         type: boolean
         required: false
       spec:
-        description: 'Provide a specific specs to run'
+        description: "Provide a specific specs to run"
         type: string
         required: false
       project:
-        description: 'Path of project to run'
+        description: "Path of project to run"
         type: string
         required: false
       command-prefix:
-        description: 'You can prefix the default test command using the command-prefix option.'
+        description: "You can prefix the default test command using the command-prefix option."
         type: string
         required: false
       cache-key:
-        description: 'Custom cache key'
+        description: "Custom cache key"
         type: string
         required: false
       quiet:
-        description: 'Whether or not to silence any Cypress specific output from stdout'
+        description: "Whether or not to silence any Cypress specific output from stdout"
         type: boolean
         required: false
         default: false
       debug-inputs:
-        description: 'Print the workflow inputs'
+        description: "Print the workflow inputs"
         type: boolean
         required: false
         default: false
       debug:
-        description: 'Set the environment variable DEBUG'
+        description: "Set the environment variable DEBUG"
         type: string
         required: false
-        default: ''
+        default: ""
       store-artifacts:
-        description: 'Store screenshots and videos from the cypress folder'
+        description: "Store screenshots and videos from the cypress folder"
         type: boolean
         required: false
         default: true
@@ -119,11 +119,11 @@ on:
         required: false
         default: false
       slack:
-        description: 'Test runs status & upload failed test screenshots to the channel'
+        description: "Test runs status & upload failed test screenshots to the channel"
         type: boolean
         required: false
         default: false
-    
+
     secrets:
       SLACK_WEBHOOK_URL:
         required: true
@@ -149,7 +149,6 @@ jobs:
         uses: bahmutov/gh-build-matrix@main
         with:
           n: ${{ inputs.n }} # number of containers to output
-
       - name: Print result 🖨
         run: echo '${{ steps.prepare.outputs.matrix }}'
 
@@ -166,10 +165,8 @@ jobs:
         env:
           WORKFLOW_INPUTS: ${{ toJson(inputs) }}
         run: echo "$WORKFLOW_INPUTS"
-
       - name: Checkout 🛎
         uses: actions/checkout@v3
-
       # these containers will load balance all found tests among themselves
       - name: Cypress tests 🧪
         uses: cypress-io/github-action@v5
@@ -185,7 +182,7 @@ jobs:
           config: ${{ inputs.config }}
           config-file: ${{ inputs.config-file }}
           # Cypress.env values
-          env: '${{ inputs.env }}'
+          env: "${{ inputs.env }}"
           browser: ${{ inputs.browser }}
           command: ${{ inputs.command }}
           start: ${{ inputs.start }}
@@ -202,12 +199,10 @@ jobs:
           command-prefix: ${{ inputs.command-prefix }}
           cache-key: ${{ inputs.cache-key }}
           quiet: ${{ inputs.quiet }}
-
       # capture screenshots, videos, Mochawesome reports
       # in a single test artifact so that relative paths work
       # capture screenshots, videos, Mochawesome reports
       # https://github.com/actions/upload-artifact
-
       - uses: actions/upload-artifact@v3
         if: ${{ inputs.store-artifacts && always() }}
         with:
@@ -226,7 +221,7 @@ jobs:
       RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_UID: ${{ secrets.SLACK_UID }}
-      SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }} 
+      SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
       SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
     steps:
       - name: Checkout 🛎
@@ -245,7 +240,6 @@ jobs:
           path: split-results
       - name: Display structure of downloaded files
         run: ls -R split-results
-
       # copy all reports and videos and screenshots into a single place
       # mochawesome/
       #   screenshots/
@@ -275,27 +269,18 @@ jobs:
             --charts true --showHooks always \
             --reportDir mochawesome/results \
             --reportFilename index.html
-
-      # # Slack notifications - test runs status & upload failed test screenshots to the channel
-      # - name: Set slack environment variables
-      #   env:
-      #     SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }} 
-      #     SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-      #   run: |
-      #     echo "SLACK_TOKEN=${SLACK_TOKEN}" >> .env
-      #     echo "SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID}" >> .env
-      
-      - name: Update report.json 
+      - name: Update json file with environment variables
         run: |
-          jq --arg run_url "$RUN_URL" --arg slack_webhook_url "$SLACK_WEBHOOK_URL" --arg slack_uid "$SLACK_UID" '.reports[].targets[].extensions[]?.inputs?.links[]? |= if .url == "$RUN_URL" then .url = $run_url else . end | .reports[].targets[].inputs? |= if .url == "$SLACK_WEBHOOK_URL" then .url = $slack_webhook_url else . end | .reports[].targets[].extensions[]?.inputs?.users[]? |= if .slack_uid == "$SLACK_UID" then .slack_uid = $slack_uid else . end' report.json > report-temp.json
-
+          jq --arg run_url "$RUN_URL" \
+             --arg slack_webhook_url "$SLACK_WEBHOOK_URL" \
+             --arg slack_uid "$SLACK_UID" \
+             '.reports[].targets[].extensions[]?.inputs?.links[]? |= if .url == "$RUN_URL" then .url = $run_url else . end | 
+              .reports[].targets[].inputs? |= if .url == "$SLACK_WEBHOOK_URL" then .url = $slack_webhook_url else . end |
+              .reports[].targets[].extensions[]?.inputs?.users[]? |= if .slack_uid == "$SLACK_UID" then .slack_uid = $slack_uid else . end' report.json > report-temp.json   
       - name: Slack notification
+        # https://github.com/test-results-reporter/reporter
         run: |
           npx test-results-reporter publish -c report-temp.json
-      - name: Slack notification print
-        run: |
-          cat report-temp.json | jq -r '.reports[0].targets[0].inputs.url, .reports[0].targets[0].extensions[0].inputs.links[0].url' | sed 's/\"//g'      
-      
       - name: Check failed tests screenshots exists
         id: failed_screenshots
         uses: andstor/file-existence-action@v2
@@ -312,4 +297,3 @@ jobs:
         with:
           name: merged-mochawesome-report
           path: mochawesome
-
