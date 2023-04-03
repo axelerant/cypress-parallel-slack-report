@@ -12,7 +12,8 @@ jobs:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }} 
       SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-   
+      SLACK_UID: ${{ secrets.SLACK_UID }} 
+
 
 
 

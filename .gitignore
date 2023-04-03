@@ -5,7 +5,6 @@
 /cypress/videos
 /cypress/reports
 /mochawesome-report
-/runner-results
-/multi-reporter-config.json
 /Screenshots
 .DS_Store
+/report-temp.json

@@ -221,7 +221,11 @@ jobs:
     needs: tests
     runs-on: ubuntu-20.04
     env:
+      RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_UID: ${{ secrets.SLACK_UID }}
+      SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }} 
+      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
     steps:
       - name: Checkout 🛎
         uses: actions/checkout@v3
@@ -270,17 +274,26 @@ jobs:
             --reportDir mochawesome/results \
             --reportFilename index.html
 
-      # Slack notifications - test runs status & upload failed test screenshots to the channel
-      - name: Set slack environment variables
-        env:
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }} 
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      # # Slack notifications - test runs status & upload failed test screenshots to the channel
+      # - name: Set slack environment variables
+      #   env:
+      #     SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }} 
+      #     SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      #   run: |
+      #     echo "SLACK_TOKEN=${SLACK_TOKEN}" >> .env
+      #     echo "SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID}" >> .env
+      
+      - name: Update report.json 
         run: |
-          echo "SLACK_TOKEN=${SLACK_TOKEN}" >> .env
-          echo "SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID}" >> .env
+          jq --arg run_url "$RUN_URL" --arg slack_webhook_url "$SLACK_WEBHOOK_URL" --arg slack_uid "$SLACK_UID" '.reports[].targets[].extensions[]?.inputs?.links[]? |= if .url == "$RUN_URL" then .url = $run_url else . end | .reports[].targets[].inputs? |= if .url == "$SLACK_WEBHOOK_URL" then .url = $slack_webhook_url else . end | .reports[].targets[].extensions[]?.inputs?.users[]? |= if .slack_uid == "$SLACK_UID" then .slack_uid = $slack_uid else . end' report.json > report-temp.json
+
       - name: Slack notification
         run: |
-          npx test-results-reporter publish -c report.json
+          npx test-results-reporter publish -c report-temp.json
+      - name: Slack notification print
+        run: |
+          cat report-temp.json | jq -r '.reports[0].targets[0].inputs.url, .reports[0].targets[0].extensions[0].inputs.links[0].url' | sed 's/\"//g'      
+      
       - name: Check failed tests screenshots exists
         id: failed_screenshots
         uses: andstor/file-existence-action@v2

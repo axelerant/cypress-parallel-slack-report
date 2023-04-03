@@ -5,7 +5,7 @@
         {
           "name": "slack",
           "inputs": {
-            "url": "SLACK_WEBHOOK_URL",
+            "url": "$SLACK_WEBHOOK_URL",
             "title": "Testing the internet-heroku website"
           },
           "extensions": [
@@ -15,13 +15,24 @@
                 "users": [
                   {
                     "name": "Kosalai",
-                    "slack_uid": "your_slack_uid"
+                    "slack_uid": "$SLACK_UID"
                   }
                 ]
               }
             },
             {
               "name": "quick-chart-test-summary"
+            },
+            {
+              "name": "hyperlinks",
+              "inputs": {
+                "links": [
+                  {
+                    "text": "Build Logs",
+                    "url": "$RUN_URL"
+                  }
+                ]
+              }
             },
             {
               "name": "metadata",
